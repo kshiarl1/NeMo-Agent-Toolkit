@@ -48,7 +48,7 @@ class RetailToolsConfig(FunctionGroupBaseConfig, name="retail_tools"):
 
 @register_function_group(config_type=RetailToolsConfig)
 async def retail_tools(
-    config: RetailToolsConfig, _builder: Builder
+    _config: RetailToolsConfig, _builder: Builder
 ) -> AsyncGenerator[FunctionGroup, None]:
     """Create and register the retail agent function group.
 
@@ -60,8 +60,8 @@ async def retail_tools(
         FunctionGroup: The configured retail tools function group with customer and product management functions.
     """
     # Load data files
-    customers_file = config.data_dir / "customers.json"
-    products_file = config.data_dir / "products.json"
+    customers_file = _config.data_dir / "customers.json"
+    products_file = _config.data_dir / "products.json"
 
     with open(customers_file) as f:
         customers_data = json.load(f)
@@ -69,7 +69,7 @@ async def retail_tools(
     with open(products_file) as f:
         products_data = json.load(f)
 
-    group = FunctionGroup(config=config)
+    group = FunctionGroup(config=_config)
 
     async def _get_customer_info(email: str) -> dict[str, Any]:
         """Look up customer information by email address.
@@ -107,12 +107,13 @@ async def retail_tools(
 
         return {"error": f"No product found with identifier: {product_identifier}"}
 
-    async def _get_all_products() -> list[dict[str, Any]]:
+    async def _get_all_products(dummy: str = "") -> list[dict[str, Any]]:
         """Retrieve a list of all available products.
 
         Returns:
             List of all products with their basic information (id, name, description, price, stock).
         """
+        del dummy
         return [
             {
                 "id": p["id"],
@@ -130,23 +131,27 @@ async def retail_tools(
             for p in products_data
         ]
 
-    async def _write_review(
-        customer_email: str, product_name: str, rating: int, review_text: str
-    ) -> dict[str, Any]:
+    async def _write_review(params: dict[str, Any]) -> dict[str, Any]:
         """Submit a product review (mock function - does not persist data).
 
         Args:
-            customer_email: The email address of the customer submitting the review.
-            product_name: The name of the product being reviewed.
-            rating: The rating score (1-5).
-            review_text: The review text content.
+            params: Dictionary with customer_email, product_name, rating, and review_text.
 
         Returns:
             Success confirmation with review details.
         """
+        customer_email: str = params.get("customer_email", "")
+        product_name: str = params.get("product_name", "")
+        rating: int = params.get("rating", 0)
+        review_text: str = params.get("review_text", "")
+
+        # Validate inputs
+        if not customer_email or not product_name or not review_text:
+            return {"error": "Missing required fields: customer_email, product_name, and review_text"}
+
         # Validate rating
-        if not 1 <= rating <= 5:
-            return {"error": "Rating must be between 1 and 5"}
+        if not isinstance(rating, int) or not 1 <= rating <= 5:
+            return {"error": "Rating must be an integer between 1 and 5"}
 
         # Check if customer exists
         customer = await _get_customer_info(customer_email)
@@ -174,17 +179,23 @@ async def retail_tools(
             "note": "This is a mock operation - the review was not actually saved to the database.",
         }
 
-    async def _send_email(recipient_email: str, content: str, cc: str = "") -> dict[str, Any]:
+    async def _send_email(params: dict[str, Any]) -> dict[str, Any]:
         """Send an email to a customer (mock function - no actual email sent).
 
         Args:
-            recipient_email: The recipient's email address.
-            content: The email content/body.
-            cc: Optional CC email addresses (comma-separated).
+            params: Dictionary with recipient_email, content, and optional cc.
 
         Returns:
             Success confirmation with email details.
         """
+        recipient_email: str = params.get("recipient_email", "")
+        content: str = params.get("content", "")
+        cc: str = params.get("cc", "")
+
+        # Validate inputs
+        if not recipient_email or not content:
+            return {"error": "Missing required fields: recipient_email and content"}
+
         return {
             "success": True,
             "message": "Email sent successfully",
@@ -197,19 +208,26 @@ async def retail_tools(
             "note": "This is a mock operation - no actual email was sent.",
         }
 
-    async def _update_customer_info(
-        customer_email: str, product_name: str, quantity: int
-    ) -> dict[str, Any]:
+    async def _update_customer_info(params: dict[str, Any]) -> dict[str, Any]:
         """Update customer information with a new order (mock function - does not persist data).
 
         Args:
-            customer_email: The email address of the customer.
-            product_name: The name of the product being ordered.
-            quantity: The quantity of the product ordered.
+            params: Dictionary with customer_email, product_name, and quantity.
 
         Returns:
             Success confirmation with updated order details.
         """
+        customer_email: str = params.get("customer_email", "")
+        product_name: str = params.get("product_name", "")
+        quantity: int = params.get("quantity", 0)
+
+        # Validate inputs
+        if not customer_email or not product_name:
+            return {"error": "Missing required fields: customer_email and product_name"}
+
+        if not isinstance(quantity, int) or quantity <= 0:
+            return {"error": "Quantity must be a positive integer"}
+
         # Check if customer exists
         customer = await _get_customer_info(customer_email)
         if "error" in customer:
