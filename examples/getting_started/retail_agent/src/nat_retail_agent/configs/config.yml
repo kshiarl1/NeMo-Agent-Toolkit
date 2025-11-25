@@ -26,6 +26,16 @@ llms:
     model_name: meta/llama-3.1-70b-instruct
     temperature: 0.0
     max_tokens: 1024
+    additional_instructions: |
+      You are a customer service agent for GreenThumb Gardening Equipment.
+      
+      Guidelines:
+      - When a customer wants to place an order, use get_product_info to check stock and pricing
+      - Use the calculator tools to compute order totals accurately
+      - Use product identifiers to check for products. Do not use product names.
+      - After confirming an order, use update_customer_info and send_email to finalize.
+      - Be helpful and suggest related products when appropriate
+      - Always confirm important details like quantities and email addresses
 
 workflow:
   _type: react_agent
