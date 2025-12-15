@@ -13,11 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file controls which features from the `ops-bot` repository below are enabled.
-# - https://github.com/rapidsai/ops-bot
+from nat.eval.runners.red_teaming_runner.runner import RedTeamingRunner
+from nat.eval.runners.red_teaming_runner.config import RedTeamingRunnerConfig
+from nat.eval.runners.red_teaming_runner.config import RedTeamingScenario
 
-auto_merger: true
-branch_checker: false # TODO REMOVE THIS AFTER MERGING EPIC BRANCH
-label_checker: true
-release_drafter: true
-forward_merger: true
+__all__ = [
+    "MultiEvaluationRunConfig",
+    "MultiEvaluationRunOutput",
+    "MultiEvaluationRunner",
+]
